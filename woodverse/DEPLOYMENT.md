@@ -6,24 +6,22 @@ Create a Vercel project from this repository and set its Root Directory to `wood
 
 - Build command: `npm run build`
 - Output directory: `dist`
-- Environment variable: `VITE_API_URL=https://woodverse-api.onrender.com`
+- Environment variable: `VITE_API_URL=https://your-api.up.railway.app`
 
 `frontend/vercel.json` keeps React routes working after a page refresh.
 
-## Render services
+## Railway backend services
 
-The repository includes `/render.yaml` for the Express API and FastAPI AI service. Create the services from the blueprint and set these values after Render gives the service URLs:
+Deploy the Express API and FastAPI AI service as separate Railway services from this repository. Use `woodverse/backend/api` and `woodverse/backend/ai-service` as their root directories.
 
 ```env
 WEB_ORIGIN=https://your-frontend.vercel.app
-AI_SERVICE_URL=https://your-ai-service.onrender.com
+AI_SERVICE_URL=https://your-ai-service.up.railway.app
 DATABASE_URL=your-postgresql-connection-string
 DB_SSL=true
 ```
 
-The API service runs from `woodverse/backend/api` with `npm ci` and `npm start`.
-
-The AI service runs from `woodverse/backend/ai-service` with `pip install -r requirements.txt` and `uvicorn src.main:app --host 0.0.0.0 --port $PORT`.
+The API service uses `npm ci` and `npm start`. The AI service uses `pip install -r requirements.txt` and `uvicorn src.main:app --host 0.0.0.0 --port $PORT`. Set the same `AI_SERVICE_API_KEY` on both services.
 
 ## Supabase Storage
 

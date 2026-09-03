@@ -6,7 +6,7 @@
 
 ---
 
-## Option 1: Railway + Supabase (Recommended)
+## Railway + Vercel + Supabase (Recommended)
 
 ### 1. Database: Supabase PostgreSQL
 
@@ -47,37 +47,11 @@
 3. Root directory: `woodverse/frontend`
 4. Framework: Vite (auto-detected)
 5. Add environment variable:
-   - `VITE_API_URL` = your Railway API URL
+   - `VITE_API_URL` = your Railway API URL, for example `https://woodverse-api.up.railway.app`
 6. Deploy → Vercel gives you `https://your-project.vercel.app`
 7. Go back to Railway API and update `WEB_ORIGIN` to this Vercel URL
 
 ---
-
-## Option 2: Fly.io + Supabase
-
-### 1. Database: Supabase
-(Same as Option 1)
-
-### 2. Backend API
-
-```bash
-cd woodverse/backend/api
-fly launch --name woodverse-api --no-deploy
-fly secrets set DATABASE_URL="postgresql://..." JWT_SECRET="..." AI_SERVICE_URL="..." WEB_ORIGIN="..." DB_SSL=true AI_SERVICE_API_KEY="..."
-fly deploy
-```
-
-### 3. AI Service
-
-```bash
-cd woodverse/backend/ai-service
-fly launch --name woodverse-ai --no-deploy
-fly secrets set AI_SERVICE_API_KEY="..."
-fly deploy
-```
-
-### 4. Frontend: Vercel
-(Same as Option 1)
 
 ---
 
@@ -90,7 +64,7 @@ fly deploy
 | `AI_SERVICE_API_KEY` | API + AI | Shared secret for AI service auth |
 | `AI_SERVICE_URL` | API | Public URL of AI service |
 | `WEB_ORIGIN` | API | Frontend URL (comma-separated if multiple) |
-| `DB_SSL` | API | `true` for managed DBs (Supabase, Render, etc) |
+| `DB_SSL` | API | `true` for managed databases such as Supabase |
 | `VITE_API_URL` | Frontend | Public URL of API service |
 
 ---
