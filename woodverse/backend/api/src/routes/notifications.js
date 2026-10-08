@@ -14,7 +14,8 @@ notificationsRouter.post("/api/notifications", authenticateToken, isAdmin, (requ
     time: currentTime(),
   };
   if (request.io) {
-    request.io.to(request.body.room || "woodverse-notifications").emit("notification:event", notification);
+    const room = "woodverse-notifications";
+    request.io.to(room).emit("notification:event", notification);
   }
   response.status(201).json(notification);
 });

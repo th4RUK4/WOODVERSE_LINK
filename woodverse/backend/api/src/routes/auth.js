@@ -78,6 +78,7 @@ authRouter.post("/api/auth/register", async (request, response) => {
     // Vendor and supplier accounts stay pending until an admin approves them, so a
     // freshly registered business account cannot immediately act as one.
     const isCustomer = requestedRole === "customer";
+    const shouldCreateVendorProfile = requestedRole === "vendor";
     const status = isCustomer ? "active" : "pending_approval";
 
     const result = await query(
@@ -90,7 +91,7 @@ authRouter.post("/api/auth/register", async (request, response) => {
 
     const user = result.rows[0];
 
-    if (!isCustomer) {
+    if (shouldCreateVendorProfile) {
       await query(
         `INSERT INTO vendors (user_id, business_name, verification_status)
          VALUES ($1, $2, 'pending')`,
@@ -122,8 +123,9 @@ authRouter.post("/api/auth/register", async (request, response) => {
       });
     }
 
+    console.error(error);
     return response.status(500).json({
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -159,6 +161,7 @@ authRouter.post("/api/auth/login", async (request, response) => {
       source: databaseConfigured ? "postgresql" : "memory",
     });
   } catch (error) {
-    response.status(500).json({ error: error.message });
+    console.error(error);
+    response.status(500).json({ error: "Internal server error" });
   }
 });

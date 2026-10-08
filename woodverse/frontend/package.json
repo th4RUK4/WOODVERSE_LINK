@@ -17,7 +17,6 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.2",
     "socket.io-client": "^4.8.3",
-    "three": "^0.185.1",
     "vite": "^6.0.7"
   },
   "devDependencies": {

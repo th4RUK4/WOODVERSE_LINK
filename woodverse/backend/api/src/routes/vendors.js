@@ -7,17 +7,33 @@ export const vendorsRouter = Router();
 vendorsRouter.post("/api/vendors", authenticateToken, authorizeRoles("vendor", "admin"), async (request, response) => {
   if (!databaseConfigured) return response.status(503).json({ error: "PostgreSQL is not configured." });
   const { userId, businessName, registrationNumber, description, documents = [] } = request.body;
-  if (!userId || !businessName) return response.status(400).json({ error: "userId and businessName are required." });
+  const effectiveUserId = request.user.role === "admin" ? userId : request.user.id;
+
+  if (!effectiveUserId || !businessName) {
+    return response.status(400).json({ error: "userId and businessName are required." });
+  }
 
   if (request.user.role !== "admin") {
+    if (userId && String(userId) !== String(request.user.id)) {
+      return response.status(403).json({ error: "You can only create a vendor profile for your own account." });
+    }
+
     const vendorResult = await query("SELECT id, user_id FROM vendors WHERE user_id = $1", [request.user.id]);
     const existing = vendorResult.rows[0];
     if (existing) {
       return response.status(403).json({ error: "A vendor profile already exists for this account." });
     }
+  } else {
+    const userResult = await query("SELECT id FROM users WHERE id = $1", [effectiveUserId]);
+    if (userResult.rows.length === 0) {
+      return response.status(404).json({ error: "User not found." });
+    }
   }
 
-  const result = await query("INSERT INTO vendors (user_id, business_name, registration_number, description, documents) VALUES ($1, $2, $3, $4, $5) RETURNING *", [userId, businessName, registrationNumber || null, description || null, JSON.stringify(documents)]);
+  const result = await query(
+    "INSERT INTO vendors (user_id, business_name, registration_number, description, documents) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    [effectiveUserId, businessName, registrationNumber || null, description || null, JSON.stringify(documents)]
+  );
   response.status(201).json({ vendor: result.rows[0] });
 });
 

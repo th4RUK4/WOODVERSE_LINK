@@ -34,11 +34,15 @@ async function startServer() {
   const { ordersRouter } = await import("../src/routes/orders.js");
   const { authRouter } = await import("../src/routes/auth.js");
   const { usersRouter } = await import("../src/routes/users.js");
+  const { vendorsRouter } = await import("../src/routes/vendors.js");
+  const { quotationsRouter } = await import("../src/routes/quotations.js");
   const app = express();
   app.use(express.json());
   app.use(ordersRouter);
   app.use(authRouter);
   app.use(usersRouter);
+  app.use(vendorsRouter);
+  app.use(quotationsRouter);
   app.use((error, _req, res, _next) => {
     res.status(500).json({ error: error.message });
   });
@@ -371,6 +375,49 @@ describe("POST /api/auth/register", () => {
       body: { email: "short@example.com", fullName: "Short", password: "abc" },
     });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/vendors", () => {
+  it("ignores a client supplied userId for a vendor user", async () => {
+    if (!TEST_DATABASE_URL) return;
+    const res = await send("POST", "/api/vendors", {
+      body: { userId: CUSTOMER_A, businessName: "Stolen Vendor" },
+      token: tokenFor(VENDOR_USER, "vendor", "vendor@example.com"),
+    });
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("POST /api/quotations", () => {
+  it("rejects a vendor that supplies another vendorId", async () => {
+    if (!TEST_DATABASE_URL) return;
+    const order = await pool.query(
+      "INSERT INTO orders (customer_id, vendor_id, status, total_amount, requires_manufacturing, fulfillment_plan, shipping_address) VALUES ($1, $2, 'processing', 1000, false, '[]'::jsonb, '{}'::jsonb) RETURNING *",
+      [CUSTOMER_A, VENDOR_ID]
+    );
+
+    const res = await send("POST", "/api/quotations", {
+      body: { orderId: order.rows[0].id, customerId: CUSTOMER_A, vendorId: "00000000-0000-4000-8000-000000009999", amount: 2500, notes: "malicious" },
+      token: tokenFor(VENDOR_USER, "vendor", "vendor@example.com"),
+    });
+
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("POST /api/auth/register", () => {
+  it("keeps supplier registration from creating a vendor profile", async () => {
+    if (!TEST_DATABASE_URL) return;
+    const res = await send("POST", "/api/auth/register", {
+      body: { email: "newsupplier@example.com", fullName: "New Supplier", role: "supplier", businessName: "Supplier Co.", password: "password123" },
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.user.role).toBe("supplier");
+
+    const vendor = await pool.query("SELECT id FROM vendors WHERE user_id = $1", [res.body.user.id]);
+    expect(vendor.rows).toHaveLength(0);
   });
 });
 

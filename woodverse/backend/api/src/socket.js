@@ -1,6 +1,37 @@
 import { currentTime } from "./utils/helpers.js";
 import { verifyToken } from "./utils/auth.js";
 
+function getAllowedSharedRoom(user) {
+  if (!user || !["vendor", "supplier"].includes(user.role)) {
+    return null;
+  }
+  return "supplier-vendor-messages";
+}
+
+function getAllowedNotificationRoom(user) {
+  if (!user) {
+    return null;
+  }
+
+  if (user.role === "admin") {
+    return "woodverse-notifications";
+  }
+
+  if (user.role === "customer") {
+    return `customer:${user.id}:notifications`;
+  }
+
+  if (user.role === "vendor") {
+    return `vendor:${user.id}:notifications`;
+  }
+
+  if (user.role === "supplier") {
+    return `supplier:${user.id}:notifications`;
+  }
+
+  return null;
+}
+
 export function registerSocketHandlers(io) {
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.headers.authorization?.split(" ")[1];
@@ -16,32 +47,75 @@ export function registerSocketHandlers(io) {
   });
 
   io.on("connection", (socket) => {
-    socket.on("vendor:join", ({ room = "supplier-vendor-messages", supplier } = {}) => {
+    socket.on("vendor:join", ({ supplier } = {}) => {
+      const room = getAllowedSharedRoom(socket.user);
+      if (!room) {
+        return socket.emit("vendor:message", {
+          id: `notice-error-${Date.now()}`,
+          vendor: "System",
+          sender: "system",
+          text: "Only vendors and suppliers can join the supplier-vendor channel.",
+          time: currentTime(),
+        });
+      }
+
       socket.join(room);
       socket.emit("vendor:message", {
         id: `welcome-${Date.now()}`,
-        vendor: "Lanka Teak Estates",
-        sender: "vendor",
-        text: `${supplier || "Supplier"} is connected to vendor messaging.`,
+        vendor: socket.user.role === "vendor" ? "Vendor Channel" : "Supplier Channel",
+        sender: socket.user.role,
+        text: `${socket.user.fullName || supplier || "Supplier"} is connected to the vendor messaging channel.`,
         time: currentTime(),
       });
     });
 
-    socket.on("vendor:thread:open", ({ vendor }) => {
+    socket.on("vendor:thread:open", ({ vendor } = {}) => {
+      if (!socket.user || !["vendor", "supplier"].includes(socket.user.role)) {
+        return socket.emit("vendor:message", {
+          id: `notice-error-${Date.now()}`,
+          vendor: "System",
+          sender: "system",
+          text: "You are not authorized to open a vendor message thread.",
+          time: currentTime(),
+        });
+      }
+
       socket.emit("vendor:message", {
         id: `thread-${Date.now()}`,
-        vendor,
-        sender: "vendor",
-        text: `Realtime thread opened with ${vendor}.`,
+        vendor: vendor || "Vendor",
+        sender: socket.user.role,
+        text: `Realtime thread opened with ${vendor || "the vendor"}.`,
         time: currentTime(),
       });
     });
 
-    socket.on("vendor:message:send", ({ room = "supplier-vendor-messages", supplier, vendor, text }) => {
+    socket.on("vendor:message:send", ({ vendor, text } = {}) => {
+      if (!socket.user || !["vendor", "supplier"].includes(socket.user.role)) {
+        return socket.emit("vendor:message", {
+          id: `notice-error-${Date.now()}`,
+          vendor: "System",
+          sender: "system",
+          text: "Only vendor and supplier accounts can send vendor messages.",
+          time: currentTime(),
+        });
+      }
+
+      const room = getAllowedSharedRoom(socket.user);
+      if (!room || !text) {
+        return socket.emit("vendor:message", {
+          id: `notice-error-${Date.now()}`,
+          vendor: vendor || "System",
+          sender: "system",
+          text: "Message content is required.",
+          time: currentTime(),
+        });
+      }
+
+      const sender = socket.user.role;
       const sentMessage = {
         id: `socket-${Date.now()}`,
-        vendor,
-        sender: "supplier",
+        vendor: vendor || "Vendor",
+        sender,
         text,
         time: currentTime(),
       };
@@ -49,26 +123,42 @@ export function registerSocketHandlers(io) {
 
       socket.emit("vendor:message", {
         id: `ack-${Date.now()}`,
-        vendor,
-        sender: "vendor",
-        text: `${vendor} received your message from ${supplier || "supplier"}.`,
+        vendor: vendor || "Vendor",
+        sender,
+        text: `${sender === "supplier" ? "Supplier" : "Vendor"} message sent to ${vendor || "the vendor"}.`,
         time: currentTime(),
       });
     });
 
-    socket.on("notification:join", ({ room = "woodverse-notifications", actor = "vendor" } = {}) => {
+    socket.on("notification:join", () => {
+      const room = getAllowedNotificationRoom(socket.user);
+      if (!room) {
+        return socket.emit("notification:event", {
+          id: `notice-error-${Date.now()}`,
+          audience: "System",
+          source: "WoodVerse API",
+          title: "Unauthorized",
+          message: "You are not authorized to join notification rooms.",
+          time: currentTime(),
+        });
+      }
+
       socket.join(room);
+      if (socket.user.role === "admin") {
+        socket.join("woodverse-notifications");
+      }
+
       socket.emit("notification:event", {
         id: `notice-welcome-${Date.now()}`,
         audience: "System",
         source: "WoodVerse API",
         title: "Notification channel connected",
-        message: `${actor} is receiving supplier and customer updates in real time.`,
+        message: `${socket.user.role} notifications are active for ${socket.user.fullName || socket.user.email}.`,
         time: currentTime(),
       });
     });
 
-    socket.on("notification:send", ({ room = "woodverse-notifications", audience = "Vendor", source = "WoodVerse", title, message }) => {
+    socket.on("notification:send", ({ audience = "Vendor", source = "WoodVerse", title, message } = {}) => {
       if (!socket.user || socket.user.role !== "admin") {
         return socket.emit("notification:event", {
           id: `notice-error-${Date.now()}`,
@@ -87,7 +177,7 @@ export function registerSocketHandlers(io) {
         message: message || "A new WoodVerse notification was created.",
         time: currentTime(),
       };
-      io.to(room).emit("notification:event", notification);
+      io.to("woodverse-notifications").emit("notification:event", notification);
     });
   });
 }

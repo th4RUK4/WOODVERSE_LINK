@@ -12,11 +12,12 @@ The platform is organized as a monorepo with three main runtime services:
 
 ## Core Roles
 
+The implemented platform roles are limited to four server-authorized roles:
+
 - Customer
-- Vendor / Seller
+- Vendor
 - Supplier
-- Support Staff
-- System Administrator
+- Admin
 
 ## Tech Stack
 

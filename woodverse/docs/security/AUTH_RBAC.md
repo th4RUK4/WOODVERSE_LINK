@@ -17,11 +17,12 @@ payments, shipments, support, and administration.
 
 Main roles:
 
+The platform currently implements four roles only:
+
 - Customer
-- Vendor / Seller
+- Vendor
 - Supplier
-- Support Staff
-- System Administrator
+- Admin
 
 Technology stack:
 

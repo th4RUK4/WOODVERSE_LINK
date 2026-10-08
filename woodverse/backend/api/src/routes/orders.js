@@ -106,16 +106,26 @@ ordersRouter.post("/api/orders", authenticateToken, authorizeRoles("customer", "
     });
 
     if (request.io) {
-      request.io.to("woodverse-notifications").emit("notification:event", {
-        id: `notice-${Date.now()}`,
-        audience: "Vendor",
-        source: "WoodVerse API",
-        title: requiresManufacturing ? "Order needs vendor approval" : "New stock order",
-        message: requiresManufacturing
-          ? `Order ${created.id} has items that must be manufactured before delivery.`
-          : `Order ${created.id} can be fulfilled from stock.`,
-        time: currentTime(),
-      });
+      const rooms = new Set(["woodverse-notifications"]);
+      if (created.customer_id) rooms.add(`customer:${created.customer_id}:notifications`);
+      if (created.vendor_id) {
+        const vendorUserResult = await query("SELECT user_id FROM vendors WHERE id = $1", [created.vendor_id]);
+        const vendorUserId = vendorUserResult.rows[0]?.user_id;
+        if (vendorUserId) rooms.add(`vendor:${vendorUserId}:notifications`);
+      }
+
+      for (const room of rooms) {
+        request.io.to(room).emit("notification:event", {
+          id: `notice-${Date.now()}`,
+          audience: "Vendor",
+          source: "WoodVerse API",
+          title: requiresManufacturing ? "Order needs vendor approval" : "New stock order",
+          message: requiresManufacturing
+            ? `Order ${created.id} has items that must be manufactured before delivery.`
+            : `Order ${created.id} can be fulfilled from stock.`,
+          time: currentTime(),
+        });
+      }
     }
 
     return response.status(201).json({

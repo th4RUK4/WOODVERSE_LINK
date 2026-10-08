@@ -18,10 +18,9 @@ payments, shipments, support, and administration.
 Main roles:
 
 - Customer
-- Vendor / Seller
+- Vendor
 - Supplier
-- Support Staff
-- System Administrator
+- Admin
 
 Technology stack:
 

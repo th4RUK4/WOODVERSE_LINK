@@ -18,10 +18,9 @@ payments, shipments, support, and administration.
 Main roles:
 
 - Customer
-- Vendor / Seller
+- Vendor
 - Supplier
-- Support Staff
-- System Administrator
+- Admin
 
 Technology stack:
 
@@ -46,10 +45,9 @@ API needs, UI states, security rules, and testing requirements.
 ## User Roles
 
 - Customer
-- Vendor / Seller
+- Vendor
 - Supplier
-- Support Staff
-- System Administrator
+- Admin
 
 ## Functional Requirements
 
