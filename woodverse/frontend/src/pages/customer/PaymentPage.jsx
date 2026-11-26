@@ -3,15 +3,15 @@ import {
   CreditCard,
 } from "lucide-react";
 import { apiRequest, formatPrice, DELIVERY_FEE, ASSURANCE_FEE } from "../../utils";
-import { vendors } from "../../data/catalog";
+
 import { CheckoutHero, OrderSummary, Panel } from "./CartPage";
-import { CheckoutGrid } from "./DeliveryPage";
+
 
 export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [isPlacing, setIsPlacing] = useState(false);
-  const orderItems = cart.length ? cart : catalogItems.slice(0, 2).map((item) => ({ ...item, quantity: 1 }));
+  const orderItems = cart;
   // Display figures only. The amount that is charged comes back from the server, which
   // prices the order from the products table. There is no hardcoded fallback total:
   // the old `|| 357500` invented a price for an empty cart.
@@ -31,7 +31,7 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
         // Only product ids and quantities. The server decides who the customer is,
         // what each item costs, and whether stock is available.
         body: JSON.stringify({
-          items: orderItems.map((item) => ({ id: item.databaseId || item.id, quantity: item.quantity || 1 })),
+          items: orderItems.map((item) => ({ id: item.databaseId || item.id, quantity: item.quantity || 1 })),\n          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),
         }),
       });
       setConfirmed(result);
@@ -48,16 +48,16 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
 
   return (
     <>
-      <CheckoutHero title="Payment" subtitle="Choose a payment method. WoodVerse holds payment until vendors confirm readiness." active="Payment" back="/delivery" />
+      <CheckoutHero title="Review Order" subtitle="Review your order. Payment processing is not integrated in this prototype." active="Payment" back="/delivery" />
       <section className="page-shell grid grid-cols-[minmax(0,1fr)_minmax(280px,340px)] gap-8 pb-16 max-lg:grid-cols-1">
-        <div className="grid gap-6"><Panel title="Payment Method" subtitle="Select how you want to complete this order."><PaymentOptions /></Panel><Panel title="Card Details" subtitle="Use test information for this prototype."><CheckoutGrid payment /></Panel></div>
+        <div className="grid gap-6"><Panel title="Payment" subtitle="No card details are collected. This creates an order only; it does not charge you."><p className="text-sm text-slate-500">Payment gateway integration is pending. Do not use this prototype for real purchases.</p></Panel></div>
         <OrderSummary
           subtotal={subtotal}
-          cta={isPlacing ? "Placing order..." : confirmed ? "Order placed" : `Pay ${formatPrice(total)}`}
+          cta={isPlacing ? "Placing order..." : confirmed ? "Order placed" : `Place order · ${formatPrice(total)}`}
           onAction={placeOrder}
           notice={notice}
           error={error}
-          disabled={isPlacing || Boolean(confirmed)}
+          disabled={isPlacing || Boolean(confirmed) || orderItems.length === 0}
         />
         {confirmed?.pricing && (
           <p className="text-sm text-slate-500 dark:text-stone-400">
