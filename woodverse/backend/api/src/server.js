@@ -19,9 +19,6 @@ const configuredOrigins = (process.env.WEB_ORIGIN || "http://localhost:5173,http
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-if (!process.env.JWT_SECRET) {
-  console.warn("JWT_SECRET is not set. Using a fallback secret. Set JWT_SECRET in production.");
-}
 
 const app = express();
 app.use(helmet());
