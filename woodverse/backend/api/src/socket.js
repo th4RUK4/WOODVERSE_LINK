@@ -56,6 +56,6 @@ export function registerSocketHandlers(io) {
         id: `notice-${now}`, audience:"Admin", source:"WoodVerse Admin",
         title:title || "Admin notification", message:message || "A notification was created.", time:currentTime(),
       });
-    });;
+    });
   });
 }
