@@ -14,6 +14,8 @@ ordersRouter.post("/api/orders",authenticateToken,authorizeRoles("customer"),asy
  if(!databaseConfigured)return res.status(503).json({error:"PostgreSQL is not configured, so orders cannot be placed."});
  const parsed=parseOrderItems(req.body?.items);if(parsed.error)return res.status(400).json({error:parsed.error});
  const items=parsed.items;if(!items.length)return res.status(400).json({error:"Cart is empty."});
+ const address=req.body?.shippingAddress;
+ if(!address || !["fullName","phone","street","district"].every(k=>typeof address[k]==="string"&&address[k].trim())) return res.status(400).json({error:"Complete shipping address is required."});
  let client;
  try{
   await query("SELECT 1");client=await getPool().connect();await client.query("BEGIN");
