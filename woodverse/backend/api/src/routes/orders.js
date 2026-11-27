@@ -40,7 +40,14 @@ ordersRouter.post("/api/orders",authenticateToken,authorizeRoles("customer"),asy
  }catch{if(client)await client.query("ROLLBACK").catch(()=>{});return res.status(500).json({error:"Unable to place order. Please try again."});}finally{client?.release();}
 });
 ordersRouter.get("/api/orders",authenticateToken,authorizeRoles("admin","vendor","customer"),async(req,res)=>{
- if(!databaseConfigured)return res.json({orders});
+ if(!databaseConfigured){
+  // Fail closed for memory mode: never return the shared in-memory order list
+  // to every authenticated role.
+  if(req.user.role==="admin") return res.json({orders});
+  if(req.user.role==="customer") return res.json({orders:orders.filter(o=>String(o.customerId||o.customer_id||"")===String(req.user.id))});
+  if(req.user.role==="vendor") return res.json({orders:orders.filter(o=>String(o.vendorUserId||o.vendor_user_id||"")===String(req.user.id))});
+  return res.json({orders:[]});
+ }
  const sql=`SELECT o.*,u.full_name AS customer_name,v.business_name AS vendor_name FROM orders o LEFT JOIN users u ON u.id=o.customer_id LEFT JOIN vendors v ON v.id=o.vendor_id`;
  try{let result;if(req.user.role==="customer")result=await query(`${sql} WHERE o.customer_id=$1 ORDER BY o.created_at DESC`,[req.user.id]);else if(req.user.role==="vendor"){const v=(await query("SELECT id FROM vendors WHERE user_id=$1",[req.user.id])).rows[0]?.id;if(!v)return res.json({orders:[]});result=await query(`${sql} WHERE o.vendor_id=$1 ORDER BY o.created_at DESC`,[v]);}else result=await query(`${sql} ORDER BY o.created_at DESC`);return res.json({orders:result.rows});}catch{return res.status(500).json({error:"Unable to retrieve orders."});}
 });
