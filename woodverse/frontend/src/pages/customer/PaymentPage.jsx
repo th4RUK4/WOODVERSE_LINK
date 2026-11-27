@@ -29,7 +29,7 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
         // what each item costs, and whether stock is available.
         body: JSON.stringify({
           items: orderItems.map((item) => ({ id: item.databaseId || item.id, quantity: item.quantity || 1 })),
-          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),\n          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),
+          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),
         }),
       });
       setConfirmed(result);
