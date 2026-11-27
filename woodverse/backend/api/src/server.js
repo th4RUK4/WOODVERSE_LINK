@@ -13,7 +13,7 @@ import { registerSocketHandlers } from "./socket.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const port = Number(process.env.PORT || 4000);
+const port = Number(process.env.PORT || 4000);\nif (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("PORT must be a valid TCP port.");\nconst isProduction = process.env.NODE_ENV === "production";\nif (isProduction && !process.env.WEB_ORIGIN) throw new Error("WEB_ORIGIN must be explicitly configured in production.");\nif (isProduction && !databaseConfigured) throw new Error("DATABASE_URL is required in production.");
 const configuredOrigins = (process.env.WEB_ORIGIN || "http://localhost:5173,http://localhost:5174")
   .split(",")
   .map((origin) => origin.trim())
