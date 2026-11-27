@@ -29,7 +29,7 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
         // what each item costs, and whether stock is available.
         body: JSON.stringify({
           items: orderItems.map((item) => ({ id: item.databaseId || item.id, quantity: item.quantity || 1 })),
-          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),
+          shippingAddress: (() => { try { return JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"); } catch { return {}; } })(),
         }),
       });
       setConfirmed(result);
@@ -65,8 +65,4 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
       </section>
     </>
   );
-}
-
-export function PaymentOptions() {
-  return <div className="grid gap-3">{["Credit or debit card", "Bank transfer", "Cash on delivery deposit"].map((item, index) => <label key={item} className="flex min-w-0 items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 leading-snug dark:border-slate-700 dark:bg-[#1d2422]"><input type="radio" name="payment" defaultChecked={index === 0} className="mt-1 shrink-0 accent-forest" /><CreditCard className="h-5 w-5 shrink-0 text-forest" /><span className="min-w-0 break-words">{item}</span></label>)}</div>;
 }
