@@ -59,6 +59,7 @@ if (process.env.NODE_ENV === "production") {
 
 initializeDatabase()
   .then((result) => {
+    if (isProduction && !result.initialized) throw new Error("Database is not initialized. Refusing to start production server.");
     const databaseStatus = result.initialized ? "ready" : "not_configured";
     server.listen(port, "0.0.0.0",() => {
       console.log(`WoodVerse Express API and Socket.IO server running on http://localhost:${port}`);
@@ -70,6 +71,8 @@ initializeDatabase()
     });
   })
   .catch((error) => {
-    console.error(`PostgreSQL initialization failed: ${error.message}`);
-    server.listen(port, "0.0.0.0", () => console.log(`WoodVerse Express API and Socket.IO server running on http://localhost:${port} without database`));
+    console.error(`Startup failed: ${error.message}`);
+    if (isProduction) process.exit(1);
+    console.warn("Starting in development mode without initialized database.");
+    server.listen(port, "0.0.0.0", () => console.log(`WoodVerse API running on port ${port} without database`));
   });
