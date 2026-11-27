@@ -1,7 +1,4 @@
 import { useState } from "react";
-import {
-  CreditCard,
-} from "lucide-react";
 import { apiRequest, formatPrice, DELIVERY_FEE, ASSURANCE_FEE } from "../../utils";
 
 import { CheckoutHero, OrderSummary, Panel } from "./CartPage";
@@ -31,7 +28,8 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
         // Only product ids and quantities. The server decides who the customer is,
         // what each item costs, and whether stock is available.
         body: JSON.stringify({
-          items: orderItems.map((item) => ({ id: item.databaseId || item.id, quantity: item.quantity || 1 })),\n          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),
+          items: orderItems.map((item) => ({ id: item.databaseId || item.id, quantity: item.quantity || 1 })),
+          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),\n          shippingAddress: JSON.parse(localStorage.getItem("woodverse-shipping-address") || "{}"),
         }),
       });
       setConfirmed(result);
@@ -61,7 +59,7 @@ export function PaymentPage({ cart = [], setCart, catalogItems = [] }) {
         />
         {confirmed?.pricing && (
           <p className="text-sm text-slate-500 dark:text-stone-400">
-            Charged amount confirmed by the server: {formatPrice(confirmed.pricing.total)}
+            Order total confirmed by the server: {formatPrice(confirmed.pricing.total)}
           </p>
         )}
       </section>
