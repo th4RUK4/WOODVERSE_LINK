@@ -1,9 +1,9 @@
-import { verifyToken } from "../utils/auth.js";
+import { verifyToken } from "../utils/auth.js";\nimport { databaseConfigured, query } from "../db.js";\nimport { devAccounts } from "../data/memory.js";
 import { authorizeRoles } from "./rbac.js";
 
 export { authorizeRoles };
 
-export function authenticateToken(request, response, next) {
+export async function authenticateToken(request, response, next) {
   const header = request.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
     return response.status(401).json({ error: "Missing or invalid authorization token." });
