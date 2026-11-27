@@ -3,7 +3,7 @@ import { verifyToken } from "./utils/auth.js";
 
 function getAllowedNotificationRoom(user) {
   if (!user) return null;
-  if (user.role === "admin") return "woodverse-notifications";
+  if (user.role === "admin") return "woodverse-admin-notifications";
   if (["customer", "vendor", "supplier"].includes(user.role)) return `${user.role}:${user.id}:notifications`;
   return null;
 }
@@ -40,12 +40,22 @@ export function registerSocketHandlers(io) {
       });
     });
 
-    socket.on("notification:send", ({ audience = "Vendor", source = "WoodVerse", title, message } = {}) => {
-      if (socket.user?.role !== "admin") return socket.emit("notification:event", { audience:"System", source:"WoodVerse API", title:"Unauthorized", message:"Only admins can send notifications.", time:currentTime() });
-      io.to("woodverse-notifications").emit("notification:event", {
-        id: `notice-${Date.now()}`, audience, source, title:title || `${audience} notification`,
-        message:message || "A new WoodVerse notification was created.", time:currentTime(),
+    // Restrict notification broadcasts to the dedicated admin room. Validate and
+    // bound payloads to avoid abuse; client-provided audience/source are not trusted.
+    let lastNotificationAt = 0;
+    socket.on("notification:send", (payload = {}) => {
+      if (socket.user?.role !== "admin") {
+        return socket.emit("notification:event", { audience:"System", source:"WoodVerse API", title:"Unauthorized", message:"Only admins can send notifications.", time:currentTime() });
+      }
+      const now = Date.now();
+      if (now - lastNotificationAt < 1000) return;
+      lastNotificationAt = now;
+      const title = typeof payload.title === "string" ? payload.title.trim().slice(0, 160) : "";
+      const message = typeof payload.message === "string" ? payload.message.trim().slice(0, 2000) : "";
+      io.to("woodverse-admin-notifications").emit("notification:event", {
+        id: `notice-${now}`, audience:"Admin", source:"WoodVerse Admin",
+        title:title || "Admin notification", message:message || "A notification was created.", time:currentTime(),
       });
-    });
+    });;
   });
 }
